@@ -14,7 +14,7 @@ const (
 )
 
 const (
-	STATUS_ALL       = iota
+	STATUS_ALL      = iota
 	STATUS_ENABLED
 	STATUS_DISABLED
 	STATUS_RUNNING
@@ -24,7 +24,6 @@ const (
 	STATUS_SUCCESS
 	STATUS_FAILED
 )
-
 
 type Phone int
 type Email string
@@ -54,15 +53,8 @@ type Job struct {
 	Status       int
 }
 
-var croner *cron.Cron
-
-func init() {
-	croner = cron.New()
-	croner.Start()
-}
-
-func AddTestJobs() {
-	croner.AddFunc("* * * * * *", func() {
+func AddTestJobs(c *cron.Cron) {
+	c.AddFunc("* * * * * *", func() {
 		f, err := os.Create(fmt.Sprintf("%s/%s.txt", os.TempDir()+"/test", time.Now().Format(time.RFC3339)))
 		if err != nil {
 			log.Fatal(err)
@@ -71,9 +63,9 @@ func AddTestJobs() {
 	})
 }
 
-func ListJobs(listType int) {
+func ListJobs(c *cron.Cron, listType int) {
 	fmt.Printf(">>> %d \n", listType)
-	jobs := croner.Entries()
+	jobs := c.Entries()
 	for _, job := range jobs {
 		fmt.Printf("%d: %s => %v, %v\n", job.ID, job.Schedule, job.Next, job.Prev)
 	}

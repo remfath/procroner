@@ -7,7 +7,11 @@ import (
 	"github.com/urfave/cli"
 	"github.com/remfath/procroner/server"
 	"github.com/remfath/procroner/job"
+	"gopkg.in/robfig/cron.v2"
+	"time"
 )
+
+var Croner *cron.Cron
 
 func printSign() {
 	fmt.Println()
@@ -19,6 +23,18 @@ func printSign() {
 	| |  | | | (_) | \__/\ | | (_) | | | |  __/ |   
 	\_|  |_|  \___/ \____/_|  \___/|_| |_|\___|_|`)
 	fmt.Println()
+}
+
+func runCroner() {
+	Croner = cron.New()
+	Croner.AddFunc("* * * * * *", func() {
+		f, err := os.Create(fmt.Sprintf("%s/%s.txt", os.TempDir()+"/test", time.Now().Format(time.RFC3339)))
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer f.Close()
+	})
+	Croner.Start()
 }
 
 func Show() {
@@ -35,6 +51,11 @@ func Show() {
 				msg, err := server.Install()
 				fmt.Println(msg)
 				return err
+			},
+			After: func(c *cli.Context) error {
+				runCroner()
+				fmt.Println("aaaaaaa")
+				return nil
 			},
 		},
 		{
@@ -99,7 +120,7 @@ func Show() {
 					Name:  "test",
 					Usage: "Add a test cron job",
 					Action: func(c *cli.Context) error {
-						job.AddTestJobs()
+						job.AddTestJobs(Croner)
 						return nil
 					},
 				},
@@ -124,7 +145,7 @@ func Show() {
 							listType = job.STATUS_HANGING
 						}
 
-						job.ListJobs(listType)
+						job.ListJobs(Croner, listType)
 						return nil
 					},
 					Flags: []cli.Flag{
